@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Letter_Auto.Models;
 
 namespace Letter_Auto.Data
 {
@@ -9,5 +10,6 @@ namespace Letter_Auto.Data
             : base(options)
         {
         }
+        public DbSet<User> Users { get; set; }
     }
 }
