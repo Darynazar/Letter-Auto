@@ -20,9 +20,6 @@ namespace Letter_Auto.Data
             base.OnModelCreating(modelBuilder);
 
             new CategoryConfiguration().Configure(modelBuilder.Entity<Category>());
-
-
-
         }
     }
 }
