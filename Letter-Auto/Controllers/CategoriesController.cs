@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,125 +10,155 @@ using Letter_Auto.Models;
 
 namespace Letter_Auto.Controllers
 {
-
-public class CategoriesController : Controller
-{
-    private readonly ApplicationDbContext _context;
-
-    public CategoriesController(ApplicationDbContext context)
+    public class CategoriesController : Controller
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    // GET: Categories/Create
-    public IActionResult Create()
-    {
-        var categoryViewModel = new CategoryViewModel
+        public CategoriesController(ApplicationDbContext context)
         {
-            Categories = _context.Categories.Select(c => new SelectListItem
+            _context = context;
+        }
+
+        // GET: Categories
+        public async Task<IActionResult> Index()
+        {
+            var applicationDbContext = _context.Categories.Include(c => c.ParentCategory);
+            return View(await applicationDbContext.ToListAsync());
+        }
+
+        // GET: Categories/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
             {
-                Value = c.Id.ToString(),
-                Text = c.Name
-            }).ToList()
-        };
+                return NotFound();
+            }
 
-        return View(categoryViewModel);
-    }
+            var category = await _context.Categories
+                .Include(c => c.ParentCategory)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (category == null)
+            {
+                return NotFound();
+            }
 
-    // POST: Categories/Create
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CategoryViewModel categoryViewModel)
-    {
-        if (ModelState.IsValid)
+            return View(category);
+        }
+
+        // GET: Categories/Create
+        public IActionResult Create()
         {
-            _context.Add(categoryViewModel.Category);
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name");
+            return View();
+        }
+
+        // POST: Categories/Create
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Id,Name,ParentId")] Category category)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(category);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name", category.ParentId);
+            return View(category);
+        }
+
+        // GET: Categories/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name", category.ParentId);
+            return View(category);
+        }
+
+        // POST: Categories/Edit/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,ParentId")] Category category)
+        {
+            if (id != category.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(category);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!CategoryExists(category.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name", category.ParentId);
+            return View(category);
+        }
+
+        // GET: Categories/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var category = await _context.Categories
+                .Include(c => c.ParentCategory)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+
+            return View(category);
+        }
+
+        // POST: Categories/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category != null)
+            {
+                _context.Categories.Remove(category);
+            }
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        // Reload categories in case of error
-        categoryViewModel.Categories = _context.Categories.Select(c => new SelectListItem
+        private bool CategoryExists(int id)
         {
-            Value = c.Id.ToString(),
-            Text = c.Name
-        }).ToList();
-
-        return View(categoryViewModel);
-    }
-
-    // GET: Categories/Edit/5
-    public async Task<IActionResult> Edit(int? id)
-    {
-        if (id == null)
-        {
-            return NotFound();
+            return _context.Categories.Any(e => e.Id == id);
         }
-
-        var category = await _context.Categories.FindAsync(id);
-        if (category == null)
-        {
-            return NotFound();
-        }
-
-        var categoryViewModel = new CategoryViewModel
-        {
-            Category = category,
-            Categories = _context.Categories.Where(c => c.Id != category.Id).Select(c => new SelectListItem
-            {
-                Value = c.Id.ToString(),
-                Text = c.Name
-            }).ToList()
-        };
-
-        return View(categoryViewModel);
     }
-
-    // POST: Categories/Edit/5
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, CategoryViewModel categoryViewModel)
-    {
-        if (id != categoryViewModel.Category.Id)
-        {
-            return NotFound();
-        }
-
-        if (ModelState.IsValid)
-        {
-            try
-            {
-                _context.Update(categoryViewModel.Category);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CategoryExists(categoryViewModel.Category.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-            return RedirectToAction(nameof(Index));
-        }
-
-        // Reload categories in case of error
-        categoryViewModel.Categories = _context.Categories.Where(c => c.Id != categoryViewModel.Category.Id).Select(c => new SelectListItem
-        {
-            Value = c.Id.ToString(),
-            Text = c.Name
-        }).ToList();
-
-        return View(categoryViewModel);
-    }
-
-    private bool CategoryExists(int id)
-    {
-        return _context.Categories.Any(e => e.Id == id);
-    }
-}
-
 }
