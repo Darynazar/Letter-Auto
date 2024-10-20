@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Letter_Auto.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace Letter_Auto.Controllers
 {
@@ -15,9 +16,12 @@ namespace Letter_Auto.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public UsersController(ApplicationDbContext context)
+        private UserManager<IdentityUser> _userManager;
+
+        public UsersController(ApplicationDbContext context , UserManager<IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Users
@@ -25,7 +29,23 @@ namespace Letter_Auto.Controllers
         {
             return View(await _context.Users.ToListAsync());
         }
+        public async Task<IActionResult> Auth(string username , string pass)
+        {
+            //var result = await UserManager.CreateAsync(user, model.Password);
 
+            //if (result.Succeeded)
+            //    result = UserManager.AddToRole(user.Id, "User");
+
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+                return StatusCode(StatusCodes.Status401Unauthorized, "Incorrect username or password");
+
+            var passwordOK = await _userManager.CheckPasswordAsync(user, pass);
+            if (!passwordOK)
+                return StatusCode(StatusCodes.Status401Unauthorized, "Incorrect username or password");
+
+            return Ok();
+        }
         // GET: Users/Details/5
         public async Task<IActionResult> Details(int? id)
         {
