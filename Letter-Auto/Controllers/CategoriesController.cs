@@ -6,47 +6,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Letter_Auto.Data;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Letter_Auto.Models;
 
 namespace Letter_Auto.Controllers
 {
-//    [Authorize(Roles = "Admin")]
-    public class UsersController : Controller
+    public class CategoriesController : Controller
     {
         private readonly ApplicationDbContext _context;
 
-        private UserManager<IdentityUser> _userManager;
-
-        public UsersController(ApplicationDbContext context , UserManager<IdentityUser> userManager)
+        public CategoriesController(ApplicationDbContext context)
         {
             _context = context;
-            _userManager = userManager;
         }
 
-        // GET: Users
+        // GET: Categories
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Users.ToListAsync());
+            var applicationDbContext = _context.Categories.Include(c => c.ParentCategory);
+            return View(await applicationDbContext.ToListAsync());
         }
-        public async Task<IActionResult> Auth(string username , string pass)
-        {
-            //var result = await UserManager.CreateAsync(user, model.Password);
 
-            //if (result.Succeeded)
-            //    result = UserManager.AddToRole(user.Id, "User");
-
-            var user = await _userManager.FindByNameAsync(username);
-            if (user == null)
-                return StatusCode(StatusCodes.Status401Unauthorized, "Incorrect username or password");
-
-            var passwordOK = await _userManager.CheckPasswordAsync(user, pass);
-            if (!passwordOK)
-                return StatusCode(StatusCodes.Status401Unauthorized, "Incorrect username or password");
-
-            return Ok();
-        }
-        // GET: Users/Details/5
+        // GET: Categories/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -54,39 +34,42 @@ namespace Letter_Auto.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var category = await _context.Categories
+                .Include(c => c.ParentCategory)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (user == null)
+            if (category == null)
             {
                 return NotFound();
             }
 
-            return View(user);
+            return View(category);
         }
 
-        // GET: Users/Create
+        // GET: Categories/Create
         public IActionResult Create()
         {
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name");
             return View();
         }
 
-        // POST: Users/Create
+        // POST: Categories/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Email,Age")] User user)
+        public async Task<IActionResult> Create([Bind("Id,Name,ParentId")] Category category)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(user);
+                _context.Add(category);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(user);
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name", category.ParentId);
+            return View(category);
         }
 
-        // GET: Users/Edit/5
+        // GET: Categories/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -94,22 +77,23 @@ namespace Letter_Auto.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
             {
                 return NotFound();
             }
-            return View(user);
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name", category.ParentId);
+            return View(category);
         }
 
-        // POST: Users/Edit/5
+        // POST: Categories/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Email,Age")] User user)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,ParentId")] Category category)
         {
-            if (id != user.Id)
+            if (id != category.Id)
             {
                 return NotFound();
             }
@@ -118,12 +102,12 @@ namespace Letter_Auto.Controllers
             {
                 try
                 {
-                    _context.Update(user);
+                    _context.Update(category);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(user.Id))
+                    if (!CategoryExists(category.Id))
                     {
                         return NotFound();
                     }
@@ -134,10 +118,11 @@ namespace Letter_Auto.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(user);
+            ViewData["ParentId"] = new SelectList(_context.Categories, "Id", "Name", category.ParentId);
+            return View(category);
         }
 
-        // GET: Users/Delete/5
+        // GET: Categories/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -145,34 +130,35 @@ namespace Letter_Auto.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var category = await _context.Categories
+                .Include(c => c.ParentCategory)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (user == null)
+            if (category == null)
             {
                 return NotFound();
             }
 
-            return View(user);
+            return View(category);
         }
 
-        // POST: Users/Delete/5
+        // POST: Categories/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user != null)
+            var category = await _context.Categories.FindAsync(id);
+            if (category != null)
             {
-                _context.Users.Remove(user);
+                _context.Categories.Remove(category);
             }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool UserExists(int id)
+        private bool CategoryExists(int id)
         {
-            return _context.Users.Any(e => e.Id == id);
+            return _context.Categories.Any(e => e.Id == id);
         }
     }
 }
