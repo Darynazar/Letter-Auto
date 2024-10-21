@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 public class Category
 {
-    
+    [Key]
     public int Id { get; set; }
 
     
@@ -15,7 +15,7 @@ public class Category
     public int? ParentId { get; set; }  // Nullable ParentId for nested categories
 
     
-    public virtual Category ParentCategory { get; set; }  // Self-referencing relationship
+    public virtual Category? ParentCategory { get; set; }  // Self-referencing relationship
 
     public virtual ICollection<Category> ChildCategories { get; set; } = new List<Category>();  // Collection for child categories
 }
