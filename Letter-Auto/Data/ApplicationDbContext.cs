@@ -14,12 +14,14 @@ namespace Letter_Auto.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Letter> Letters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             new CategoryConfiguration().Configure(modelBuilder.Entity<Category>());
+            new LetterConfiguration().Configure(modelBuilder.Entity<Letter>());
         }
     }
 }
