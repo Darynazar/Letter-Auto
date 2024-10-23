@@ -59,14 +59,31 @@ namespace Letter_Auto.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Subject,Sender,Receiver,Description,Status,CurrentOrganization,CategoryId,UserId,Image")] Letter letter)
+        public async Task<IActionResult> Create([Bind("Id,Title,Subject,Sender,Receiver,Description,Status,CurrentOrganization,CategoryId,UserId")] Letter letter, IFormFile imageFile)
         {
             if (ModelState.IsValid)
             {
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    // Generate a unique file name
+                    var fileName = Path.GetFileName(imageFile.FileName);
+                    var filePath = Path.Combine("wwwroot/images", fileName);
+
+                    // Save the file
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await imageFile.CopyToAsync(stream);
+                    }
+
+                    // Store the file path in the database
+                    letter.Image = $"/images/{fileName}";
+                }
+
                 _context.Add(letter);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
             ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId);
             return View(letter);
