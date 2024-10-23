@@ -31,7 +31,7 @@ namespace Letter_Auto.Models
 
         [ForeignKey("Category")]
         public int CategoryId { get; set; }
-        public virtual Category Category { get; set; }
+        public virtual Category? Category { get; set; }
 
         //[ForeignKey("User")]
         //public string UserId { get; set; }  // ForeignKey to AspNetUsers table
