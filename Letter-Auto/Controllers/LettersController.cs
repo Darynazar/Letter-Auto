@@ -92,20 +92,16 @@ namespace Letter_Auto.Controllers
         // GET: Letters/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+          if (id == null) return NotFound();
 
-            var letter = await _context.Letters.FindAsync(id);
-            if (letter == null)
-            {
-                return NotFound();
-            }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId);
-            return View(letter);
+          var letter = await _context.Letters.FindAsync(id);
+          if (letter == null) return NotFound();
+
+          ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
+          ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId); // Set current UserId
+          return View(letter);
         }
+
 
         // POST: Letters/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
@@ -140,7 +136,7 @@ namespace Letter_Auto.Controllers
                 return RedirectToAction(nameof(Index));
             }
             ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId);
+//            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId);
             return View(letter);
         }
 
