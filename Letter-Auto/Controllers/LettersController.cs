@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Letter_Auto.Data;
 using Letter_Auto.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Letter_Auto.Controllers
 {
+    [Authorize]
     public class LettersController : Controller
     {
         private readonly ApplicationDbContext _context;
