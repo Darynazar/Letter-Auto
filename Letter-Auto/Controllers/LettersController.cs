@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Letter_Auto.Data;
 using Letter_Auto.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Letter_Auto.Controllers
 {
+    [Authorize]
     public class LettersController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -92,57 +94,82 @@ namespace Letter_Auto.Controllers
         // GET: Letters/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+          if (id == null) return NotFound();
 
-            var letter = await _context.Letters.FindAsync(id);
-            if (letter == null)
-            {
-                return NotFound();
-            }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId);
-            return View(letter);
+          var letter = await _context.Letters.FindAsync(id);
+          if (letter == null) return NotFound();
+
+          ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
+          ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId); // Set current UserId
+          return View(letter);
         }
+
 
         // POST: Letters/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Subject,Sender,Receiver,Description,Status,CurrentOrganization,CategoryId,UserId,Image")] Letter letter)
-        {
-            if (id != letter.Id)
-            {
-                return NotFound();
-            }
+      [HttpPost]
+      [ValidateAntiForgeryToken]
+      public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Subject,Sender,Receiver,Description,Status,CurrentOrganization,CategoryId,UserId,Image")] Letter letter, IFormFile? imageFile)
+      {
+          if (id != letter.Id)
+          {
+              return NotFound();
+          }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(letter);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!LetterExists(letter.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", letter.UserId);
-            return View(letter);
-        }
+          if (ModelState.IsValid)
+          {
+              try
+              {
+                  var existingLetter = await _context.Letters.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id);
+
+                  // Remove the old image if a new one is uploaded
+                  if (imageFile != null && imageFile.Length > 0)
+                  {
+                      if (!string.IsNullOrEmpty(existingLetter.Image))
+                      {
+                          var oldFilePath = Path.Combine("wwwroot", existingLetter.Image.TrimStart('/'));
+                          if (System.IO.File.Exists(oldFilePath))
+                          {
+                              System.IO.File.Delete(oldFilePath);
+                          }
+                      }
+
+                      // Save new image
+                      var fileName = Path.GetFileName(imageFile.FileName);
+                      var filePath = Path.Combine("wwwroot/images", fileName);
+
+                      using (var stream = new FileStream(filePath, FileMode.Create))
+                      {
+                          await imageFile.CopyToAsync(stream);
+                      }
+
+                      letter.Image = $"/images/{fileName}";
+                  }
+                  else
+                  {
+                      letter.Image = existingLetter.Image;
+                  }
+
+                  _context.Update(letter);
+                  await _context.SaveChangesAsync();
+              }
+              catch (DbUpdateConcurrencyException)
+              {
+                  if (!LetterExists(letter.Id))
+                  {
+                      return NotFound();
+                  }
+                  else
+                  {
+                      throw;
+                  }
+              }
+              return RedirectToAction(nameof(Index));
+          }
+          ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", letter.CategoryId);
+          return View(letter);
+      }
 
         // GET: Letters/Delete/5
         public async Task<IActionResult> Delete(int? id)
